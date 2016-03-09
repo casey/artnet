@@ -28,3 +28,4 @@ todo
 
 - add noise for final presentation
 - better gallery and presentation for images
+- merge artnet, artscene, and artnet-new into one repo
