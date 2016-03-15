@@ -1,0 +1,31 @@
+todo
+----
+
+- clean
+  . parse escape sequences, emit braile
+
+- compile
+  . ignore files that are mostly lower case letters
+  . ignore random corrupted files
+  . can i remove duplicate sequences, or ignore them?
+  . ascii vs block
+  . same color vs no color 
+
+- train
+  - different paremeters
+
+- sample (prime with blank line + newline)
+
+- present
+  . rasterize to pngs
+  . hand made header and footer
+  . greetz: char-rnn and torch-rnn, textfiles.org, the art scene
+  . color it myself
+  . go through a ton of stuff, find the most interesting bits
+  . double size for high res display
+  . add noise
+  . good gallery and presentation
+  . maybe just super long image
+  . alternative color schemes
+
+- merge artnet, artscene, and artnet-new into one repo

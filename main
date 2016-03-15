@@ -1,0 +1,147 @@
+#!/usr/bin/env python3.5
+
+import os, collections, sys, shutil, subprocess, re
+
+def print_count(l):
+  c = collections.Counter(l)
+  for name, count in c.most_common():
+    print('{0: <5} {1}'.format(count, name))
+
+def die(*args):
+  sys.exit(*args)
+
+commands = {}
+
+def register(f):
+  commands[f.__name__] = f
+
+def replace_prefix(s, prefix, replacement):
+  if not s.startswith(prefix):
+    die('chomp: {} does not start with {}'.format(s, prefix))
+  return replacement + s[len(prefix):]
+
+@register
+def unpack():
+  problematic = []
+  for root, subdirs, files in os.walk('dat/raw'):
+    dst_root = replace_prefix(root, 'dat/raw', 'dat/unpacked')
+    if not os.path.isdir(dst_root):
+      os.makedirs(dst_root)
+    for name in files:
+      src = os.path.join(root, name)
+      dst = os.path.join(dst_root, name)
+      _, ext = os.path.splitext(name)
+      if ext == '.zip':
+        cmd = ['unzip', '-n', src, '-d', dst]
+      elif ext == '.rar':
+        os.makedirs(dst)
+        cmd = ['unrar', 'e','-or', src, dst]
+      elif ext == '.lzh' or ext == '.lha':
+        cmd = ['lha', 'x', '-w', dst, src]
+      elif ext == '.arj':
+        cmd = ['arj', 'e', src, dst]
+      elif ext == '.tgz':
+        cmd = ['tar', 'zxvf', src, '-C', dst]
+      else:
+        cmd = ['cp', src, dst]
+      print('running {}'.format(' '.join(cmd)))
+      result = subprocess.call(cmd)
+      if result != 0:
+        print('{} failed!'.format(' '.join(cmd)))
+        problematic.append(src)
+  print()
+  print('problematic:')
+  for src in problematic:
+    print(src)
+
+PRINTABLE = re.compile(b'[!-~]')
+SPACE     = re.compile(b' '    )
+TAB       = re.compile(b'\x09' )
+CRLF      = re.compile(b'\r\n' )
+LF        = re.compile(b'\n'   )
+EOF       = re.compile(b'\x1A' )
+
+def translate(src, dst):
+  with open(src, 'rb') as f:
+    data = f.read()
+  s     = ''
+  count = len(data)
+  x     = 0
+  i     = 0
+  bad   = False
+  def endline():
+    nonlocal s, x, bad
+    if x > 80:
+      print('bad width:', x, src)
+      bad = True
+      return
+    s += ' ' * (80 - x)
+    s += '\n'
+    x = 0
+  while i < count and not bad:
+    c = data[i]
+    if c == 0 or c == 0x1B: # NUL ESC
+      return
+    elif c >= 0x20 and c <= 0x7E: # ascii printable
+      s += chr(c)
+      x += 1
+      i += 1
+    elif c == 0x9: # TAB
+      s += ' ' * 8
+      x += 8
+      i += 1
+    elif c == 0xA: # LF
+      endline()
+      i += 1
+    elif CRLF.match(data, i): # CRLF
+      endline()
+      i += 2
+    elif c == 0x1A: # EOF
+      endline()
+      break
+    else:
+      s += bytes([c]).decode('cp437')
+      x += 1
+      i += 1
+  if not s:
+    return
+  if s[-1] != '\n':
+    endline()
+  if bad:
+    return
+  art_ratio = len(re.sub('[a-z]+', '', s)) / len(s)
+  if art_ratio < 0.75:
+    dst += '.boring'
+  print('good:', src)
+  with open(dst, 'wt') as f:
+    f.write(s)
+
+@register
+def clean():
+  exts = set()
+  for root, subdirs, files in os.walk('dat/unpacked'):
+    dst_root = replace_prefix(root, 'dat/unpacked', 'dat/clean')
+    if not os.path.isdir(dst_root):
+      os.makedirs(dst_root)
+    for name in files:
+      _, ext = os.path.splitext(name)
+      if ext.lower() in '.rip .h .cpp .inc .bat .dat cmbx .doc .msi .rc2'.split():
+        continue
+      src = os.path.join(root, name)
+      dst = os.path.join(dst_root, name)
+      translate(src, dst)
+
+@register
+def compile():
+  pass
+
+if len(sys.argv) != 2:
+  die('usage: main COMMAND')
+
+command = sys.argv[1]
+
+if command in commands:
+  print('{}ing...'.format(command))
+  commands[command]()
+else:
+  die('unexpected command:', command)
