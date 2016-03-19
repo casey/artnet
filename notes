@@ -5,6 +5,8 @@ todo
   . parse escape sequences, emit braile
 
 - compile
+  . check for all combinations of states. do any not occur? are any super rare?
+  . can i encode all possible state: fg bg italics bold, etc in a single character?
   . ignore files that are mostly lower case letters
   . ignore random corrupted files
   . can i remove duplicate sequences, or ignore them?
@@ -17,6 +19,7 @@ todo
 - sample (prime with blank line + newline)
 
 - present
+  . html canvas renderer that also renders to pngs
   . rasterize to pngs
   . hand made header and footer
   . greetz: char-rnn and torch-rnn, textfiles.org, the art scene
