@@ -1,34 +1,25 @@
 todo
 ----
 
-- clean
-  . parse escape sequences, emit braile
+- terminal renderer
+- png renderer
 
 - compile
-  . check for all combinations of states. do any not occur? are any super rare?
-  . can i encode all possible state: fg bg italics bold, etc in a single character?
-  . ignore files that are mostly lower case letters
-  . ignore random corrupted files
-  . can i remove duplicate sequences, or ignore them?
-  . ascii vs block
-  . same color vs no color 
+  - character frequency
+  - how many files are there?
+  - classify by hand?
 
 - train
-  - different paremeters
+  - different parameters
 
 - sample (prime with blank line + newline)
 
 - present
-  . html canvas renderer that also renders to pngs
-  . rasterize to pngs
   . hand made header and footer
   . greetz: char-rnn and torch-rnn, textfiles.org, the art scene
   . color it myself
+  . try alternative color schemes
   . go through a ton of stuff, find the most interesting bits
   . double size for high res display
   . add noise
-  . good gallery and presentation
-  . maybe just super long image
-  . alternative color schemes
-
-- merge artnet, artscene, and artnet-new into one repo
+  . single super long image

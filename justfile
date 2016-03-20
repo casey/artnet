@@ -14,6 +14,7 @@ unpack:
 clean:
 	rm -rf dat/clean
 	mkdir dat/clean
+	rm -f *.log
 	./main clean
 	find dat/clean -depth -empty -delete
 

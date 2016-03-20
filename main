@@ -54,15 +54,26 @@ def unpack():
   for src in problematic:
     print(src)
 
-PRINTABLE = re.compile(b'[!-~]'            )
-SPACE     = re.compile(b' '                )
-TAB       = re.compile(b'\x09'             )
-CRLF      = re.compile(b'\r\n'             )
-LF        = re.compile(b'\n'               )
-EOF       = re.compile(b'\x1A'             )
-SGR       = re.compile(b'\x1B[[]([0-9;]*)m')
+PRINTABLE = re.compile(b'[!-~]'                        )
+SPACE     = re.compile(b' '                            )
+TAB       = re.compile(b'\x09'                         )
+CRLF      = re.compile(b'\r\n'                         )
+LF        = re.compile(b'\n'                           )
+EOF       = re.compile(b'\x1A'                         )
+SGR       = re.compile(b'\x1B[[]([0-9;]*)m'            )
+WHATEVER  = re.compile(b'\x1B[[][^A-Za-z+-]*[A-Za-z+-]')
 
 sgr_counter = collections.Counter()
+
+good      = []
+bad_width = []
+bad_data  = []
+empty     = []
+
+def writelines(dst, lines):
+  with open(dst, 'w') as f:
+    for line in lines:
+      f.write(line + '\n')
 
 def translate(src, dst):
   with open(src, 'rb') as f:
@@ -94,14 +105,13 @@ def translate(src, dst):
     nonlocal s, x, bad, color
     if x > 80:
       print('bad width:', x, src)
+      bad_width.append(src)
       bad = True
-      return
     s += (color() + ' ') * (80 - x)
     s += color() + '\n'
     x = 0
   while i < count and not bad:
     match = SGR.match(data, i)
-    c = data[i]
     if match:
       payload = match.group(1).decode('utf-8')
       sgrs.append(payload)
@@ -126,8 +136,16 @@ def translate(src, dst):
         elif n >= 39 and n <= 47:
           bg = n - 39
       i += len(match.group(0))
-    elif c == 0 or c == 0x1B: # NUL ESC
-      return
+      continue
+    match = WHATEVER.match(data, i)
+    if match:
+      i += len(match.group(0))
+      continue
+    c = data[i]
+    if c == 0x1B: # ESC
+      print('stray escape character:', src)
+      bad_data.append(src)
+      bad = True
     elif c == 0x9: # TAB
       s += (color() + ' ') * 8
       x += 8
@@ -145,12 +163,14 @@ def translate(src, dst):
       s += color() + cp437.characters[c]
       x += 1
       i += 1
-  if not s:
-    return
-  if s[-1] != '\n':
+  if count == 0:
+    empty.append(src)
+    bad = True
+  if s and s[-1] != '\n':
     endline()
   if bad:
     return
+  good.append(src)
   print('good:', src)
   sgr_counter.update(sgrs)
   with open(dst, 'wt') as f:
@@ -170,9 +190,12 @@ def clean():
       src = os.path.join(root, name)
       dst = os.path.join(dst_root, name)
       translate(src, dst)
-  print('\nsgrs:')
-  for sgr, count in sgr_counter.most_common():
-    print(count, sgr)
+
+  writelines('good.log',      good)
+  writelines('bad-width.log', bad_width)
+  writelines('bad-data.log',  bad_data)
+  writelines('empty.log',     empty)
+  writelines('sgrs.log', ['{} {}'.format(s, c) for s, c in sgr_counter.most_common()])
 
 @register
 def compile():
