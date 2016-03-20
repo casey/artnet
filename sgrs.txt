@@ -1,0 +1,37 @@
+0 - all attributes off
+    (background = 0, foreground = 7)
+1 - bold  (changes the foreground color)
+2 - faint (ignored by ansilove, bold off?)
+3 - italic
+4 - underline
+5 - blink
+7 - swap foreground and background (ignored by ansilove)
+22 - clear bold/faint attribute
+
+24 - turn off underline
+
+30 - set foreground color
+31
+32
+33
+34
+35
+36
+37
+
+39 - set background color
+40
+41
+42
+43
+44
+45
+46
+47
+
+3 bits background
+4 bits foreground
+1 italic
+1 underline
+
+51 - framed (ignored by anislove)
