@@ -48,4 +48,7 @@ sample:
 	mkdir dat/samples
 	./main sample
 
+watch:
+	watch -n 0.5 nvidia-smi
+
 .PHONY: list fetch unpack

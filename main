@@ -349,18 +349,26 @@ class Item:
     self.json      = os.path.join('dat/preprocessed', name + '.json')
     self.cv_prefix = os.path.join('dat/checkpoints',  name          )
     self.samples   = os.path.join('dat/samples',      name + '.txt' )
-    if self.size < 12 * meg * 1.2:
+    if self.size < 2 * meg * 1.2:
+      self.category   = 'small'
+      self.rnn_size   = 256
+      self.num_layers = 2
+      self.max_epochs = 50
+    elif self.size < 8 * meg * 1.2:
       self.category   = 'normal'
       self.rnn_size   = 512
       self.num_layers = 3
+      self.max_epochs = 50
     elif self.size < 32 * meg * 1.2:
       self.category   = 'huge'
       self.rnn_size   = 1024
       self.num_layers = 3
+      self.max_epochs = 50
     else:
       self.category   = 'gigantic'
       self.rnn_size   = 2048
       self.num_layers = 3
+      self.max_epochs = 25
 
 def unsorted():
   return [Item(path) for path in glob.glob('dat/compiled/*')]
@@ -376,7 +384,7 @@ def preprocess():
     item = items[i]
     print('preprocessing {} of {}: {}...'.format(i + 1, count, item.name))
     cmd = fmt_cmd('''
-      python ../artscene/torch-rnn/scripts/preprocess.py
+      python lib/torch-rnn/scripts/preprocess.py
       --input_txt   {0.txt}
       --output_h5   {0.h5}
       --output_json {0.json}
@@ -393,13 +401,14 @@ def train():
     print('size={0.rnn_size} layers={0.num_layers}'.format(item))
     cmd = fmt_cmd('''
     th train.lua
-    -input_h5 ../{0.h5}
-    -input_json ../{0.json}
-    -checkpoint_name ../{0.cv_prefix}
-    -checkpoint_every 0
+    -input_h5 ../../{0.h5}
+    -input_json ../../{0.json}
+    -checkpoint_name ../../{0.cv_prefix}
+    -checkpoint_every 1000
     -rnn_size {0.rnn_size}
     -num_layers {0.num_layers}
-    -seq_length 160
+    -max_epochs {0.max_epochs}
+    -seq_length 243
     -gpu 0
     ''').format(item)
     subprocess.check_call(cmd, cwd='lib/torch-rnn', shell=True)
