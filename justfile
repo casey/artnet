@@ -33,4 +33,19 @@ compile:
 	mkdir dat/compiled
 	./main compile
 
+preprocess:
+	rm -rf dat/preprocessed
+	mkdir dat/preprocessed
+	./main preprocess
+
+train:
+	rm -rf dat/checkpoints
+	mkdir dat/checkpoints
+	./main train
+
+sample:
+	rm -rf dat/samples
+	mkdir dat/samples
+	./main sample
+
 .PHONY: list fetch unpack
