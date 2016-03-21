@@ -339,16 +339,21 @@ def compile():
 
 meg = 1 << 20
 
+def checkpoint_number(checkpoint):
+  base, _ = os.path.splitext(checkpoint)
+  return int(base.split('_')[-1])
+
 class Item:
   def __init__(self, path):
-    name, _ = os.path.splitext(replace_prefix(path, 'dat/compiled/', ''))
-    self.name      = name
-    self.size      = os.path.getsize(path)
-    self.txt       = os.path.join('dat/compiled',     name + '.txt' )
-    self.h5        = os.path.join('dat/preprocessed', name + '.h5'  )
-    self.json      = os.path.join('dat/preprocessed', name + '.json')
-    self.cv_prefix = os.path.join('dat/checkpoints',  name          )
-    self.samples   = os.path.join('dat/samples',      name + '.txt' )
+    name, _          = os.path.splitext(replace_prefix(path, 'dat/compiled/', ''))
+    self.name        = name
+    self.size        = os.path.getsize(path)
+    self.txt         = os.path.join('dat/compiled',     name + '.txt' )
+    self.h5          = os.path.join('dat/preprocessed', name + '.h5'  )
+    self.json        = os.path.join('dat/preprocessed', name + '.json')
+    self.cv_prefix   = os.path.join('dat/checkpoints',  name          )
+    self.sample      = os.path.join('dat/samples',      name + '.txt' )
+    self.checkpoints = sorted(glob.glob(self.cv_prefix + '*.t7'), key=checkpoint_number)
     if self.size < 2 * meg * 1.2:
       self.category   = 'small'
       self.rnn_size   = 256
@@ -415,7 +420,24 @@ def train():
 
 @register
 def sample():
-  pass
+  items = by_size()
+  count = len(items)
+  for i in range(count):
+    item = items[i]
+    if not item.checkpoints:
+      print('skipping {}...'.format(item.name))
+      continue
+    checkpoint = item.checkpoints[-1]
+    print('sampling {}...'.format(checkpoint))
+    cmd = fmt_cmd('''
+    th sample.lua
+    -checkpoint ../../{}
+    -length 40960
+    -verbose 0
+    ''').format(checkpoint)
+    output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
+    with open(item.sample, 'wb') as f:
+      f.write(output)
 
 if len(sys.argv) != 2:
   die('usage: main COMMAND')
@@ -423,7 +445,10 @@ if len(sys.argv) != 2:
 command = sys.argv[1]
 
 if command in commands:
-  print('{}ing...'.format(command))
+  if command[-1] == 'e':
+    print('{}ing...'.format(command[0:-1]))
+  else:
+    print('{}ing...'.format(command))
   commands[command]()
 else:
   die('unexpected command:', command)
