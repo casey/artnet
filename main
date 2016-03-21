@@ -8,7 +8,9 @@ def print_count(l):
     print('{0: <5} {1}'.format(count, name))
 
 def die(*args):
-  sys.exit(*args)
+  if args:
+    print(*args)
+  sys.exit(-1)
 
 commands = {}
 
@@ -127,7 +129,7 @@ def translate(src, dst):
           bg = 0
           fg = 7
         elif n == 1:
-          bold = 0
+          bold = 1
         elif n == 3:
           italic = 0
         elif n == 4:
@@ -194,15 +196,15 @@ limit = False
 def clean():
   exts = set()
   i = 0
-  for root, subdirs, files in os.walk('dat/unpacked'):
+  for root, subdirs, files in os.walk('dat/artpacks'):
     if limit and i > 1000:
       break
-    dst_root = replace_prefix(root, 'dat/unpacked', 'dat/clean')
+    dst_root = replace_prefix(root, 'dat/artpacks', 'dat/clean')
     if not os.path.isdir(dst_root):
       os.makedirs(dst_root)
     for name in files:
       _, ext = os.path.splitext(name)
-      if ext.lower() in '.rip .h .cpp .inc .bat .dat cmbx .doc .msi .rc2'.split():
+      if ext.lower() not in {'.asc', '.ans', '.ice'}:
         continue
       src = os.path.join(root, name)
       dst = os.path.join(dst_root, name)
@@ -227,7 +229,55 @@ def clean():
 
 @register
 def classify():
-  pass
+  i = 0
+  for root, subdirs, files in os.walk('dat/clean'):
+    for name in files:
+      src = os.path.join(root, name)
+      match = re.match('^dat/clean/(acid|ice|other)/([0-9]{4})/', src)
+      if not match:
+        die('no match:', src)
+      group = match.group(1)
+      year = int(match.group(2))
+      ext = os.path.splitext(src)[1][1:].lower()
+      dst = 'dat/classified/{}-{}-{}-{}.ans'.format(group, year, ext, i)
+      shutil.copyfile(src, dst)
+      i += 1
+
+@register
+def render():
+  for root, subdirs, files in os.walk('dat/classified'):
+    for name in files:
+      src = os.path.join(root, name)
+      dst = replace_prefix(src, 'dat/classified', 'dat/rendered')
+      data = open(src, 'r').read()
+      with open(dst, 'wb') as f:
+        bold = 0
+        fg   = 7
+        bg   = 0
+        for i in range(len(data)):
+          c = data[i]
+          n = ord(c)
+          if i % 2 == 0:
+            offset = n & 0b1111111
+            if offset > 127 or offset < 0:
+              sys.exit('bad offset', offset)
+            bg = offset & 0b111
+            offset >>= 3
+            fg = offset & 0b111
+            offset >>= 3
+            bold = offset & 0b1
+          else:
+            if c == '\n':
+              pass
+            else:
+              f.write(b'\x1B[0m')
+              if bold:
+                f.write(b'\x1B[1m')
+              f.write(b'\x1B' + '[{};{}m'.format(30 + fg, 40 + bg).encode('ascii'))
+              original = cp437.codepoints.index(n)
+              if original > 255:
+                die('bad original:', original)
+              f.write(bytes([original]))
 
 if len(sys.argv) != 2:
   die('usage: main COMMAND')

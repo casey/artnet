@@ -1,14 +1,11 @@
 todo
 ----
 
-- terminal renderer
-- png renderer
+- render color
 
-- discard files that consist largely of lowercase letters
-- classify files as either mostly block art, or not
+- why is ice not showing up?
 
-- classify
-  YEAR-EXT-GROUP.ans
+- separate into blocks and not blocks
 
 - train
   - different parameters

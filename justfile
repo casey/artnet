@@ -23,4 +23,9 @@ classify:
 	mkdir dat/classified
 	./main classify
 
+render:
+	rm -rf dat/rendered
+	mkdir dat/rendered
+	./main render
+
 .PHONY: list fetch unpack
