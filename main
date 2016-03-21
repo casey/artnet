@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 
-import os, collections, sys, shutil, subprocess, re, cp437
+import os, collections, sys, shutil, subprocess, re, cp437, hashlib
 
 def print_count(l):
   c = collections.Counter(l)
@@ -54,21 +54,20 @@ def unpack():
   for src in problematic:
     print(src)
 
-PRINTABLE = re.compile(b'[!-~]'                        )
-SPACE     = re.compile(b' '                            )
-TAB       = re.compile(b'\x09'                         )
-CRLF      = re.compile(b'\r\n'                         )
-LF        = re.compile(b'\n'                           )
-EOF       = re.compile(b'\x1A'                         )
-SGR       = re.compile(b'\x1B[[]([0-9;]*)m'            )
-WHATEVER  = re.compile(b'\x1B[[][^A-Za-z+-]*[A-Za-z+-]')
+CRLF      = re.compile(b'\r\n'                                   )
+SGR       = re.compile(b'\x1B[[]([0-9;]*)m'                      )
+CURSOR    = re.compile(b'\x1B[[]([0-9;,]*)(A|B|C|D||H|J|K|M|s|u)')
+WHATEVER  = re.compile(b'\x1B[[]([^A-Za-z+-]*[A-Za-z+-])'        )
 
 sgr_counter = collections.Counter()
+esc_counter = collections.Counter()
 
-good      = []
-bad_width = []
-bad_data  = []
-empty     = []
+good       = []
+bad_width  = []
+bad_data   = []
+empty      = []
+cursor     = []
+duplicates = {}
 
 def writelines(dst, lines):
   with open(dst, 'w') as f:
@@ -78,6 +77,12 @@ def writelines(dst, lines):
 def translate(src, dst):
   with open(src, 'rb') as f:
     data = f.read()
+  digest = hashlib.sha256(data).digest()
+  if digest in duplicates:
+    duplicates[digest].append(src)
+    return
+  else:
+    duplicates[digest] = [src]
   s      = ''
   count  = len(data)
   x      = 0
@@ -137,8 +142,15 @@ def translate(src, dst):
           bg = n - 39
       i += len(match.group(0))
       continue
+    match = CURSOR.match(data, i)
+    if match:
+      cursor.append(src)
+      bad = True
+      i += len(match.group(0))
+      continue
     match = WHATEVER.match(data, i)
     if match:
+      esc_counter[match.group(1)] += 1
       i += len(match.group(0))
       continue
     c = data[i]
@@ -176,10 +188,15 @@ def translate(src, dst):
   with open(dst, 'wt') as f:
     f.write(s)
 
+limit = False
+
 @register
 def clean():
   exts = set()
+  i = 0
   for root, subdirs, files in os.walk('dat/unpacked'):
+    if limit and i > 1000:
+      break
     dst_root = replace_prefix(root, 'dat/unpacked', 'dat/clean')
     if not os.path.isdir(dst_root):
       os.makedirs(dst_root)
@@ -190,15 +207,26 @@ def clean():
       src = os.path.join(root, name)
       dst = os.path.join(dst_root, name)
       translate(src, dst)
+      i += 1
 
   writelines('good.log',      good)
   writelines('bad-width.log', bad_width)
   writelines('bad-data.log',  bad_data)
   writelines('empty.log',     empty)
-  writelines('sgrs.log', ['{} {}'.format(s, c) for s, c in sgr_counter.most_common()])
+  writelines('cursor.log',    cursor)
+  writelines('sgr.log', ['{} {}'.format(s, n) for s, n in sgr_counter.most_common()])
+  writelines('esc.log', ['{} {}'.format(e, n) for e, n in esc_counter.most_common()])
+  lines = []
+  for digest, paths in duplicates.items():
+    if len(paths) == 1:
+      continue
+    for path in duplicates[digest]:
+      lines.append(path)
+    lines.append('')
+  writelines('duplicates.log', lines)
 
 @register
-def compile():
+def classify():
   pass
 
 if len(sys.argv) != 2:

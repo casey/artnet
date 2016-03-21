@@ -18,4 +18,9 @@ clean:
 	./main clean
 	find dat/clean -depth -empty -delete
 
+classify:
+	rm -rf dat/classified
+	mkdir dat/classified
+	./main classify
+
 .PHONY: list fetch unpack

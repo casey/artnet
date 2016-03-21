@@ -4,10 +4,11 @@ todo
 - terminal renderer
 - png renderer
 
-- compile
-  - character frequency
-  - how many files are there?
-  - classify by hand?
+- discard files that consist largely of lowercase letters
+- classify files as either mostly block art, or not
+
+- classify
+  YEAR-EXT-GROUP.ans
 
 - train
   - different parameters
