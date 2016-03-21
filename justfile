@@ -28,4 +28,9 @@ render:
 	mkdir dat/rendered
 	./main render
 
+compile:
+	rm -rf dat/compiled
+	mkdir dat/compiled
+	./main compile
+
 .PHONY: list fetch unpack

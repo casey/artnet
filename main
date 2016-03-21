@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 
-import os, collections, sys, shutil, subprocess, re, cp437, hashlib
+import os, collections, sys, shutil, subprocess, re, cp437, hashlib, random
 
 def print_count(l):
   c = collections.Counter(l)
@@ -69,12 +69,15 @@ bad_width  = []
 bad_data   = []
 empty      = []
 cursor     = []
+text       = []
 duplicates = {}
 
 def writelines(dst, lines):
   with open(dst, 'w') as f:
     for line in lines:
       f.write(line + '\n')
+
+emit_color = False
 
 def translate(src, dst):
   with open(src, 'rb') as f:
@@ -85,13 +88,14 @@ def translate(src, dst):
     return
   else:
     duplicates[digest] = [src]
-  s      = ''
-  count  = len(data)
-  x      = 0
-  i      = 0
-  bad    = False
-  sgrs   = []
-
+  s         = ''
+  printable = 0
+  lowercase = 0
+  count     = len(data)
+  x         = 0
+  i         = 0
+  bad       = False
+  sgrs      = []
   bold      = 0
   italic    = 0
   underline = 0
@@ -99,13 +103,17 @@ def translate(src, dst):
   bg        = 0
   fg        = 7
   def color():
+    if not emit_color:
+      return ''
     nonlocal bold, fg, bg
-    offset = bold
-    offset <<= 1
-    offset |= fg
+    offset = bold & 0b1
     offset <<= 3
-    offset |= bg
-    if offset < 0 or offset > 127:
+    offset |= fg & 0b111
+    offset <<= 1
+    offset |= blink & 0b1
+    offset <<= 3
+    offset |= bg & 0b111
+    if offset < 0 or offset > 255:
       die('bad offset:', offset)
     return chr(0x2800 + offset)
   def endline():
@@ -140,8 +148,8 @@ def translate(src, dst):
           underline = 0
         elif n >= 30 and n <= 37:
           fg = n - 30
-        elif n >= 39 and n <= 47:
-          bg = n - 39
+        elif n >= 40 and n <= 47:
+          bg = n - 40
       i += len(match.group(0))
       continue
     match = CURSOR.match(data, i)
@@ -174,6 +182,10 @@ def translate(src, dst):
       endline()
       break
     else:
+      if c != 0 and c != 32:
+        printable += 1
+      if c >= 97 and c <= 122:
+        lowercase += 1
       s += color() + cp437.characters[c]
       x += 1
       i += 1
@@ -183,6 +195,13 @@ def translate(src, dst):
   if s and s[-1] != '\n':
     endline()
   if bad:
+    return
+  if printable == 0:
+    art_ratio = 1
+  else:
+    art_ratio = 1 - lowercase / printable
+  if art_ratio < 0.50:
+    text.append(src)
     return
   good.append(src)
   print('good:', src)
@@ -203,8 +222,8 @@ def clean():
     if not os.path.isdir(dst_root):
       os.makedirs(dst_root)
     for name in files:
-      _, ext = os.path.splitext(name)
-      if ext.lower() not in {'.asc', '.ans', '.ice'}:
+      ext = os.path.splitext(name)[1][1:].lower()
+      if ext not in {'ans', 'asc', 'ice'}:
         continue
       src = os.path.join(root, name)
       dst = os.path.join(dst_root, name)
@@ -216,6 +235,7 @@ def clean():
   writelines('bad-data.log',  bad_data)
   writelines('empty.log',     empty)
   writelines('cursor.log',    cursor)
+  writelines('text.log',      text)
   writelines('sgr.log', ['{} {}'.format(s, n) for s, n in sgr_counter.most_common()])
   writelines('esc.log', ['{} {}'.format(e, n) for e, n in esc_counter.most_common()])
   lines = []
@@ -232,6 +252,8 @@ def classify():
   i = 0
   for root, subdirs, files in os.walk('dat/clean'):
     for name in files:
+      if name == '.DS_Store':
+        continue
       src = os.path.join(root, name)
       match = re.match('^dat/clean/(acid|ice|other)/([0-9]{4})/', src)
       if not match:
@@ -257,12 +279,14 @@ def render():
         for i in range(len(data)):
           c = data[i]
           n = ord(c)
-          if i % 2 == 0:
-            offset = n & 0b1111111
-            if offset > 127 or offset < 0:
+          if emit_color and i % 2 == 0:
+            offset = n - 0x2800
+            if offset > 255 or offset < 0:
               sys.exit('bad offset', offset)
             bg = offset & 0b111
             offset >>= 3
+            blink = offset & 0b1
+            offset >>= 1
             fg = offset & 0b111
             offset >>= 3
             bold = offset & 0b1
@@ -270,14 +294,44 @@ def render():
             if c == '\n':
               pass
             else:
-              f.write(b'\x1B[0m')
-              if bold:
-                f.write(b'\x1B[1m')
-              f.write(b'\x1B' + '[{};{}m'.format(30 + fg, 40 + bg).encode('ascii'))
+              if emit_color:
+                f.write(b'\x1B[0m')
+                if bold:
+                  f.write(b'\x1B[1m')
+                if blink:
+                  f.write(b'\x1B[5m')
+                f.write(b'\x1B' + '[{};{}m'.format(30 + fg, 40 + bg).encode('ascii'))
               original = cp437.codepoints.index(n)
               if original > 255:
                 die('bad original:', original)
               f.write(bytes([original]))
+
+def make_training_set(dst, srcs, target_size):
+  random.shuffle(srcs)
+  with open(dst, 'wb') as df:
+    n = 0
+    for src in srcs:
+      if n >= target_size:
+        break
+      with open(src, 'rb') as sf:
+        data = sf.read()
+        n += len(data)
+        df.write(data)
+
+meg = 1 << 20
+
+@register
+def compile():
+  srcs = []
+  for root, subdirs, files in os.walk('dat/classified'):
+    for name in files:
+      srcs.append(os.path.join(root, name))
+  make_training_set('dat/compiled/2.txt',   srcs,    2 * meg)
+  make_training_set('dat/compiled/4.txt',   srcs,    4 * meg)
+  make_training_set('dat/compiled/8.txt',   srcs,    8 * meg)
+  make_training_set('dat/compiled/16.txt',  srcs,   16 * meg)
+  make_training_set('dat/compiled/32.txt',  srcs,   32 * meg)
+  make_training_set('dat/compiled/all.txt', srcs, 1000 * meg)
 
 if len(sys.argv) != 2:
   die('usage: main COMMAND')

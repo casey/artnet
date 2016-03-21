@@ -1,23 +1,27 @@
 todo
 ----
 
-- render color
-
-- why is ice not showing up?
-
-- separate into blocks and not blocks
-
 - train
-  - different parameters
+  - each line is 81 characters, so 81 * whatever lines of lookback
 
 - sample (prime with blank line + newline)
 
 - present
   . hand made header and footer
-  . greetz: char-rnn and torch-rnn, textfiles.org, the art scene
+  . greetz:
+    . char-rnn
+    . torch-rnn
+    . textfiles.com
+    . the art scene
+    . ice
+    . acid
+    . neural networks everywhere
   . color it myself
   . try alternative color schemes
   . go through a ton of stuff, find the most interesting bits
   . double size for high res display
   . add noise
   . single super long image
+
+- wishlist
+  . do actual wrapping and cursor movement
