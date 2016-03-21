@@ -277,40 +277,50 @@ def render():
     for name in files:
       src = os.path.join(root, name)
       dst = replace_prefix(src, 'dat/classified', 'dat/rendered')
-      data = open(src, 'r').read()
-      with open(dst, 'wb') as f:
-        bold = 0
-        fg   = 7
-        bg   = 0
-        for i in range(len(data)):
-          c = data[i]
-          n = ord(c)
-          if emit_color and i % 2 == 0:
-            offset = n - 0x2800
-            if offset > 255 or offset < 0:
-              sys.exit('bad offset', offset)
-            bg = offset & 0b111
-            offset >>= 3
-            blink = offset & 0b1
-            offset >>= 1
-            fg = offset & 0b111
-            offset >>= 3
-            bold = offset & 0b1
-          else:
-            if c == '\n':
-              pass
-            else:
-              if emit_color:
-                f.write(b'\x1B[0m')
-                if bold:
-                  f.write(b'\x1B[1m')
-                if blink:
-                  f.write(b'\x1B[5m')
-                f.write(b'\x1B' + '[{};{}m'.format(30 + fg, 40 + bg).encode('ascii'))
-              original = cp437.codepoints.index(n)
-              if original > 255:
-                die('bad original:', original)
-              f.write(bytes([original]))
+      render_file(src, dst)
+
+def render_file(src, dst):
+  data = open(src, 'r').read()
+  with open(dst, 'wb') as f:
+    bold = 0
+    fg   = 7
+    bg   = 0
+    x    = 0
+    for i in range(len(data)):
+      c = data[i]
+      n = ord(c)
+      if emit_color and i % 2 == 0:
+        offset = n - 0x2800
+        if offset > 255 or offset < 0:
+          sys.exit('bad offset', offset)
+        bg = offset & 0b111
+        offset >>= 3
+        blink = offset & 0b1
+        offset >>= 1
+        fg = offset & 0b111
+        offset >>= 3
+        bold = offset & 0b1
+      else:
+        if c == '\n':
+          f.write(b'\n')
+          x = 0
+        else:
+          if x > 78:
+            continue
+          if emit_color:
+            f.write(b'\x1B[0m')
+            if bold:
+              f.write(b'\x1B[1m')
+            if blink:
+              f.write(b'\x1B[5m')
+            f.write(b'\x1B' + '[{};{}m'.format(30 + fg, 40 + bg).encode('ascii'))
+          if n not in cp437.codepoints:
+            n = ord(' ')
+          original = cp437.codepoints.index(n)
+          if original > 255:
+            die('bad original:', original)
+          f.write(bytes([original]))
+          x += 1
 
 def make_training_set(dst, srcs, target_size):
   random.shuffle(srcs)
@@ -438,6 +448,16 @@ def sample():
     output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
     with open(item.sample, 'wb') as f:
       f.write(output)
+
+@register
+def rasterize():
+  for txt in glob.glob('dat/rasterized/*.txt'):
+    base, ext = os.path.splitext(txt)
+    ans = base + '.ans'
+    render_file(txt, ans)
+    cmd = 'lib/ansilove-php/ansilove {}'.format(ans)
+    print(cmd)
+    subprocess.check_call(cmd, shell=True)
 
 if len(sys.argv) != 2:
   die('usage: main COMMAND')

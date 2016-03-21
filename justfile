@@ -48,6 +48,12 @@ sample:
 	mkdir dat/samples
 	./main sample
 
+rasterize:
+	rm -rf dat/rasterized
+	mkdir dat/rasterized
+	rsync -avz --progress 10.0.0.5:src/artnet/dat/samples/ dat/rasterized
+	./main rasterize
+
 watch:
 	watch -n 0.5 nvidia-smi
 
