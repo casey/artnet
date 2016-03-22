@@ -2,7 +2,6 @@ todo
 ----
 
 - train
-  - each line is 81 characters, so 81 * whatever lines of lookback
 
 - sample (prime with blank line + newline)
 
@@ -25,3 +24,7 @@ todo
 
 - wishlist
   . do actual wrapping and cursor movement
+  . collaborate with some guy to extend torch-rnn to take
+    character-level features (or add feature to set input directly)
+  . separate block art and non-block art
+  . separate colors and b/w
