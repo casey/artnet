@@ -1,45 +1,40 @@
 todo
 ----
 
-- train
+. remove right margin
+. touch up by hand
 
-- sample
-  . use checkpoint with best val_loss
-  . play with all the sampling parameters
+. huge image zoom with mouse
+. single super long image
+. auto-colorize with different schemes
+. use random color schemes from that website
+. render in 3d
+. use bright white
+. add noise
+. make sure it's small. maybe a gif would be better
 
-- present
-  . fake art pack
-    . make up group members
-  . hand made header and footer
-  . greetz:
-    . char-rnn
-    . torch-rnn
-    . textfiles.com
-    . all the ansi artists
-    . the art scene
-    . ice
-    . acid
-    . neural networks everywhere
-  . color it myself
-  . bright white
-  . try alternative color schemes
-  . go through a ton of stuff, find the most interesting bits
-  . double size for high res display
-  . add noise
-  . single super long image
-  . get a few images into a blocktronics artpack  
-  . collaborate with blocktronics
-    . they could do coloring? embellishment?
+. double size for high rez displays
+
+. greetz
+  . char-rnn
+  . torch-rnn
+  . textfiles.com
+  . all the ansi artists
+  . the art scene
+  . ice
+  . acid
+  . neural networks everywhere
+
+. send image to blocktronics
 
 - wishlist
   . write a proper ansi parser, ansi.py
   . do actual wrapping and cursor movement
-  . collaborate with some guy to extend torch-rnn to take
-    character-level features (or add feature to set input directly)
+  . do character level features
   . separate by character frequency:
     . line art
     . block art
     . ascii art
     . other identifiable generes?
   . separate colors and b/w
-  . feature request character-level features
+  . parse width from sauce record

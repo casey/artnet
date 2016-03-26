@@ -2,21 +2,7 @@
 
 import os, collections, sys, shutil, subprocess, re, cp437, hashlib, random, glob, operator, json
 
-def fmt_cmd(s):
-  s = s.strip()
-  s = re.sub('\n', ' ', s)
-  s = re.sub(' +', ' ', s)
-  return s
-
-def print_count(l):
-  c = collections.Counter(l)
-  for name, count in c.most_common():
-    print('{0: <5} {1}'.format(count, name))
-
-def die(*args):
-  if args:
-    print(*args)
-  sys.exit(-1)
+from lib import *
 
 def slurp(path):
   with open(path, 'r') as f:
@@ -26,11 +12,6 @@ commands = {}
 
 def register(f):
   commands[f.__name__] = f
-
-def replace_prefix(s, prefix, replacement):
-  if not s.startswith(prefix):
-    die('chomp: {} does not start with {}'.format(s, prefix))
-  return replacement + s[len(prefix):]
 
 @register
 def unpack():
