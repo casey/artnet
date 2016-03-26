@@ -54,6 +54,9 @@ rasterize:
 	rsync -avz --progress 10.0.0.5:src/artnet/dat/samples/ dat/rasterized
 	./main rasterize
 
+info:
+	./main info
+
 watch:
 	watch -n 0.5 nvidia-smi
 

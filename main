@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 
-import os, collections, sys, shutil, subprocess, re, cp437, hashlib, random, glob, operator
+import os, collections, sys, shutil, subprocess, re, cp437, hashlib, random, glob, operator, json
 
 def fmt_cmd(s):
   s = s.strip()
@@ -17,6 +17,10 @@ def die(*args):
   if args:
     print(*args)
   sys.exit(-1)
+
+def slurp(path):
+  with open(path, 'r') as f:
+    return f.read()
 
 commands = {}
 
@@ -347,6 +351,7 @@ def compile():
   make_training_set('dat/compiled/32.txt',  srcs,   32 * meg)
   make_training_set('dat/compiled/all.txt', srcs, 1000 * meg)
 
+kib = 1 << 10
 meg = 1 << 20
 
 def checkpoint_number(checkpoint):
@@ -355,15 +360,19 @@ def checkpoint_number(checkpoint):
 
 class Item:
   def __init__(self, path):
-    name, _          = os.path.splitext(replace_prefix(path, 'dat/compiled/', ''))
-    self.name        = name
-    self.size        = os.path.getsize(path)
-    self.txt         = os.path.join('dat/compiled',     name + '.txt' )
-    self.h5          = os.path.join('dat/preprocessed', name + '.h5'  )
-    self.json        = os.path.join('dat/preprocessed', name + '.json')
-    self.cv_prefix   = os.path.join('dat/checkpoints',  name          )
-    self.sample      = os.path.join('dat/samples',      name + '.txt' )
-    self.checkpoints = sorted(glob.glob(self.cv_prefix + '*.t7'), key=checkpoint_number)
+    name, _              = os.path.splitext(replace_prefix(path, 'dat/compiled/', ''))
+    self.name            = name
+    self.size            = os.path.getsize(path)
+    self.txt             = os.path.join('dat/compiled',     name + '.txt' )
+    self.h5              = os.path.join('dat/preprocessed', name + '.h5'  )
+    self.json            = os.path.join('dat/preprocessed', name + '.json')
+    self.cv_prefix       = os.path.join('dat/checkpoints',  name          )
+    self.checkpoints     = sorted(glob.glob(self.cv_prefix + '*.t7'), key= checkpoint_number)
+    self.checkpoint_info = [s[:-3] + '.json' for s in self.checkpoints]
+    self.samples         = [
+      'dat/samples/{}_{}.txt'.format(name, checkpoint_number(checkpoint))
+      for checkpoint in self.checkpoints
+    ]
     if self.size < 2 * meg * 1.2:
       self.category   = 'small'
       self.rnn_size   = 256
@@ -435,19 +444,30 @@ def sample():
   for i in range(count):
     item = items[i]
     if not item.checkpoints:
-      print('skipping {}...'.format(item.name))
+      print('no checkpoints for {}...'.format(item.name))
       continue
-    checkpoint = item.checkpoints[-1]
-    print('sampling {}...'.format(checkpoint))
-    cmd = fmt_cmd('''
-    th sample.lua
-    -checkpoint ../../{}
-    -length 40960
-    -verbose 0
-    ''').format(checkpoint)
-    output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
-    with open(item.sample, 'wb') as f:
-      f.write(output)
+    for i in range(len(item.checkpoints)):
+      checkpoint = item.checkpoints[i]
+      sample     = item.samples[i]
+      print('sampling {}...'.format(checkpoint))
+      cmd = fmt_cmd('''
+      th sample.lua
+      -checkpoint ../../{}
+      -length {}
+      -verbose 0
+      ''').format(checkpoint, 200 * kib)
+      output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
+      with open('{}.{}'.format(sample, n), 'wb') as f:
+        f.write(output)
+
+@register
+def info():
+  items = by_size()
+  for item in items:
+    for i in range(len(item.checkpoints)):
+      data = json.loads(slurp(item.checkpoint_info[i]))
+      val_loss = data['val_loss_history'][-1]
+      print(item.checkpoints[i], val_loss)
 
 @register
 def rasterize():
@@ -463,6 +483,12 @@ if len(sys.argv) != 2:
   die('usage: main COMMAND')
 
 command = sys.argv[1]
+
+def arg(n):
+  if n + 2 < len(sys.argv):
+    return sys.argv[n + 2]
+  else:
+    return None
 
 if command in commands:
   if command[-1] == 'e':
