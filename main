@@ -427,19 +427,18 @@ def sample():
     if not item.checkpoints:
       print('no checkpoints for {}...'.format(item.name))
       continue
-    for i in range(len(item.checkpoints)):
-      checkpoint = item.checkpoints[i]
-      sample     = item.samples[i]
-      print('sampling {}...'.format(checkpoint))
-      cmd = fmt_cmd('''
-      th sample.lua
-      -checkpoint ../../{}
-      -length {}
-      -verbose 0
-      ''').format(checkpoint, 200 * kib)
-      output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
-      with open('{}.{}'.format(sample, n), 'wb') as f:
-        f.write(output)
+    checkpoint = item.checkpoints[-1]
+    sample     = item.samples[-1]
+    print('sampling {}...'.format(checkpoint))
+    cmd = fmt_cmd('''
+    th sample.lua
+    -checkpoint ../../{}
+    -length {}
+    -verbose 0
+    ''').format(checkpoint, 200 * kib)
+    output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
+    with open('{}.{}.txt'.format(sample, i / 10), 'wb') as f:
+      f.write(output)
 
 @register
 def info():
