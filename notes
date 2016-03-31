@@ -1,59 +1,18 @@
 todo
 ----
 
-instagram, facebook, twitter, tumblr, reddit, imgur
-they all link to one place
-give them all a name
-
-could spam facebook
-1 every 10 minutes for a week
-1 every hour for 6 weeks
-1 every day for 3 years
-could do the same on twitter, or instagram, or tumbler
-
-should I cull down to just images I like?
-
-. remove right margin
-. touch up by hand
-
-. huge image zoom with mouse
-. single super long image
-. auto-colorize with different schemes
-. use random color schemes from that website
-. slightly different shade per image
-. render in 3d
-. use bright white
-. add noise
-. make sure it's small. maybe a gif would be better
-
+. final pass over images
+. add black border
+. trim black pixels
+. make huge single image, try different presentations in browser
+. try making it white, or lighter grey
 . double size for high rez displays
 
-. greetz
-  . char-rnn
-  . torch-rnn
-  . textfiles.com
-  . all the ansi artists
-  . the art scene
-  . ice
-  . acid
-  . neural networks everywhere
-
-. send image to blocktronics
-
 . post
+  . send link to blocktronics
   . reddit
   . hacker news
   . machine learning
   . ansi art
 
-- wishlist
-  . write a proper ansi parser, ansi.py
-  . do actual wrapping and cursor movement
-  . do character level features
-  . separate by character frequency:
-    . line art
-    . block art
-    . ascii art
-    . other identifiable generes?
-  . separate colors and b/w
-  . parse width from sauce record
+. back up everything to thumb drive
