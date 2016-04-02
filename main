@@ -469,6 +469,7 @@ artists = [
   'tomo_huynh',
   'chris_brunjes',
   'keith_aaron_von_nadolny',
+  'chris_lewis',
 ]
 
 def chunk(l, n):
