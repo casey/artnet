@@ -1,3 +1,5 @@
+import re, sys, collections
+
 def die(*args):
   if args:
     print(*args)

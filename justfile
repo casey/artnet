@@ -54,6 +54,11 @@ rasterize:
 	rsync -avz --progress 10.0.0.5:src/artnet/dat/samples/ dat/rasterized
 	./main rasterize
 
+pack:
+	rm -rf dat/packs
+	mkdir dat/packs
+	./main pack
+
 info:
 	./main info
 

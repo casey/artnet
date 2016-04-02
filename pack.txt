@@ -1,0 +1,10 @@
+Hi!
+
+Enclosed is the output from 10 runs of my weirdo ansi-generating neural network. I'm giving everyone unique content, so the files in this zip are different from what everyone else got.
+
+The network was trained on a whole bunch of artpacks from 1992 to 2008. I tried to clean up the input data as much as possible, for example removing files that were mostly text, and using only files with an .ASC extension, since I haven't gotten color working. However, the output is still really messy.
+
+You'll see a lot of random crap in there so definitely hunt around and copy out the section or sections that you like. And be sure the check out all the files! There are often very cool, unique shapes hidden in all the junk.
+
+<3
+rodarmor

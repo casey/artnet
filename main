@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 
-import os, collections, sys, shutil, subprocess, re, cp437, hashlib, random, glob, operator, json
+import os, collections, sys, shutil, subprocess, re, cp437, hashlib, random, glob, operator, json, zipfile
 
 from lib import *
 
@@ -458,6 +458,43 @@ def rasterize():
     cmd = 'lib/ansilove-php/ansilove {}'.format(ans)
     print(cmd)
     subprocess.check_call(cmd, shell=True)
+
+artists = [
+  'luciano_ayres',
+  'reset_survivor',
+  'bjorn_odendahl',
+  'bryan_ashby',
+  'joshua_hillyard',
+  'matt_matthew',
+  'tomo_huynh',
+  'chris_brunjes',
+  'keith_aaron_von_nadolny',
+]
+
+def chunk(l, n):
+  for i in range(0, len(l), n):
+    yield l[i:i+n]
+
+@register
+def pack():
+  ansis = sorted(glob.glob('dat/rasterized/*.ans'))
+  chunks = list(chunk(ansis, 10))
+  chunk_count = len(chunks)
+  artist_count = len(artists)
+  if chunk_count < artist_count:
+    die('only {} chunks for {} artists'.format(chunk_count, artist_count))
+  for i in range(artist_count):
+    artist = artists[i]
+    art = chunks[i]
+    pack = 'dat/packs/{}'.format(artist)
+    os.mkdir(pack)
+    for n in range(len(art)):
+      shutil.copy(art[n], pack + '/{}.ans'.format(n))
+    shutil.copy('pack.txt', pack + '/readme.txt')
+    with zipfile.ZipFile(pack + '.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+      for root, dirs, files in os.walk(pack):
+        for name in files:
+          z.write(os.path.join(root, name), name)
 
 if len(sys.argv) != 2:
   die('usage: main COMMAND')
