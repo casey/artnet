@@ -429,16 +429,18 @@ def sample():
       continue
     checkpoint = item.checkpoints[-1]
     sample     = item.samples[-1]
-    print('sampling {}...'.format(checkpoint))
-    cmd = fmt_cmd('''
-    th sample.lua
-    -checkpoint ../../{}
-    -length {}
-    -verbose 0
-    ''').format(checkpoint, 200 * kib)
-    output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
-    with open('{}.{}.txt'.format(sample, i / 10), 'wb') as f:
-      f.write(output)
+    for j in range(10000000000):
+      dst = '{}.{}.txt'.format(os.path.splitext(sample)[0], j)
+      print('sampling {} into {}...'.format(checkpoint, dst))
+      cmd = fmt_cmd('''
+      th sample.lua
+      -checkpoint ../../{}
+      -length {}
+      -verbose 0
+      ''').format(checkpoint, 200 * kib)
+      output = subprocess.check_output(cmd, cwd='lib/torch-rnn', shell=True)
+      with open(dst, 'wb') as f:
+        f.write(output)
 
 @register
 def info():
