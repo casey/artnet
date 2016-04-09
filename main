@@ -453,13 +453,13 @@ def info():
 
 @register
 def rasterize():
-  for txt in glob.glob('dat/rasterized/*.txt'):
+  for txt in sorted(glob.glob('dat/rasterized/*.txt')):
     base, ext = os.path.splitext(txt)
     ans = base + '.ans'
     render_file(txt, ans)
     cmd = 'lib/ansilove-php/ansilove {}'.format(ans)
     print(cmd)
-    subprocess.check_call(cmd, shell=True)
+    #subprocess.check_call(cmd, shell=True)
 
 artists = [
   'luciano_ayres',
@@ -473,6 +473,10 @@ artists = [
   'keith_aaron_von_nadolny',
   'chris_lewis',
   'fost_lovesu',
+  'antti_kiuru',
+  'florian_ochmann',
+  'public',
+  'aaron_frick',
 ]
 
 def chunk(l, n):
